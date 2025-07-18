@@ -1,0 +1,6 @@
+torch
+ torchaudio
+ jiwer
+ matplotlib
+ pandas
+ numpy 
