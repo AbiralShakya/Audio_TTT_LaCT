@@ -1,7 +1,7 @@
 import torch
 from transformers import AutoProcessor, MusicgenForConditionalGeneration
 import soundfile as sf
-from lact_ar_video.minVid.models.lact_audio import LaCTAudioConfig, LaCTAudioModel
+from lact_audio.models.lact_audio import LaCTAudioConfig, LaCTAudioModel
 
 # Load MusicGen
 model_id = "facebook/musicgen-small"

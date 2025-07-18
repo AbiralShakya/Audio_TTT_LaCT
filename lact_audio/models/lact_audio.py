@@ -1,3 +1,4 @@
+# (Moved from lact_ar_video/minVid/models/lact_audio.py)
 # -*- coding: utf-8 -*-
 """
 LaCTAudio: Large Chunk Test-Time Training for Audio Transformers
