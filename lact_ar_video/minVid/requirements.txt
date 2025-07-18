@@ -3,7 +3,13 @@ Pillow
 imageio
 numpy
 pyarrow>=20.0.0
-transformers
+transformers>=4.30.0
+datasets
+torchaudio
+scipy
+audiomentations
+soundfile
+pesq
 safetensors>=0.5.3
 einops
 torch>=2.6.0,<2.7.0
