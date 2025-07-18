@@ -46,3 +46,10 @@ If you find this codebase useful for your research, please kindly cite our paper
 }
 ```
 
+
+Notes:
+consider quantitative analysis for audio transformer quality / generation
+consider prev literature & implemenation of audio transformers
+run baseline of regular audio transformer on some target that is common in literature
+engineer the audio transformer w/ TTT layer and then measure 'quality' & hardware efficiency
+
