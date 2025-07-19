@@ -5,6 +5,7 @@ from lact_llm.lact_model.configuration_lact_swiglu import LaCTSWIGLUConfig
 from lact_llm.lact_asr.modeling_asr_lact import LaCTASRModel
 from lact_llm.lact_asr.modeling_asr_token_ttt import TokenTTTASRModel
 import pandas as pd
+from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
 
 # Dummy baseline model (no TTT): just a linear projection for demo
 class BaselineASRModel(torch.nn.Module):
@@ -34,6 +35,11 @@ def main():
     baseline = BaselineASRModel(input_dim=80, vocab_size=vocab_size)
     chunk_ttt = LaCTASRModel(config, vocab_size)
     token_ttt = TokenTTTASRModel(config, vocab_size)
+    # Wav2Vec2 Baseline
+    w2v2_model_id = "facebook/wav2vec2-base-960h"
+    w2v2_processor = Wav2Vec2Processor.from_pretrained(w2v2_model_id)
+    w2v2_model = Wav2Vec2ForCTC.from_pretrained(w2v2_model_id)
+    w2v2_model.eval()
     # Results storage
     results = []
     # Evaluation loop (small batch for demo)
@@ -50,25 +56,37 @@ def main():
         # Token TTT
         logits_token = token_ttt(features, decoder_input_ids=None)
         hyp_token = decode_logits(logits_token, vocab)[0]
+        # Wav2Vec2 Baseline
+        input_wav = waveform[0].squeeze().numpy()
+        w2v2_inputs = w2v2_processor(input_wav, sampling_rate=sample_rate[0], return_tensors="pt", padding=True)
+        with torch.no_grad():
+            w2v2_logits = w2v2_model(w2v2_inputs.input_values).logits
+        w2v2_pred_ids = torch.argmax(w2v2_logits, dim=-1)
+        hyp_w2v2 = w2v2_processor.batch_decode(w2v2_pred_ids)[0].lower()
         # Metrics
         ref = transcript[0].lower()
         wer_base = compute_wer(ref, hyp_base)
         wer_chunk = compute_wer(ref, hyp_chunk)
         wer_token = compute_wer(ref, hyp_token)
+        wer_w2v2 = compute_wer(ref, hyp_w2v2)
         cer_base = compute_cer(ref, hyp_base)
         cer_chunk = compute_cer(ref, hyp_chunk)
         cer_token = compute_cer(ref, hyp_token)
+        cer_w2v2 = compute_cer(ref, hyp_w2v2)
         print(f"Sample {i+1}")
         print(f"REF: {ref}")
         print(f"BASE: {hyp_base}")
         print(f"CHUNK_TTT: {hyp_chunk}")
         print(f"TOKEN_TTT: {hyp_token}")
+        print(f"WAV2VEC2: {hyp_w2v2}")
         print(f"WER (BASE): {wer_base:.3f}")
         print(f"WER (CHUNK_TTT): {wer_chunk:.3f}")
         print(f"WER (TOKEN_TTT): {wer_token:.3f}")
+        print(f"WER (WAV2VEC2): {wer_w2v2:.3f}")
         print(f"CER (BASE): {cer_base:.3f}")
         print(f"CER (CHUNK_TTT): {cer_chunk:.3f}")
         print(f"CER (TOKEN_TTT): {cer_token:.3f}")
+        print(f"CER (WAV2VEC2): {cer_w2v2:.3f}")
         log_hardware_metrics()
         print("-"*40)
         results.append({
@@ -77,12 +95,15 @@ def main():
             "BASE": hyp_base,
             "CHUNK_TTT": hyp_chunk,
             "TOKEN_TTT": hyp_token,
+            "WAV2VEC2": hyp_w2v2,
             "WER_BASE": wer_base,
             "WER_CHUNK_TTT": wer_chunk,
             "WER_TOKEN_TTT": wer_token,
+            "WER_WAV2VEC2": wer_w2v2,
             "CER_BASE": cer_base,
             "CER_CHUNK_TTT": cer_chunk,
-            "CER_TOKEN_TTT": cer_token
+            "CER_TOKEN_TTT": cer_token,
+            "CER_WAV2VEC2": cer_w2v2
         })
     # Save results for plotting
     df = pd.DataFrame(results)
